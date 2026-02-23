@@ -70,8 +70,21 @@ export class TelegramManager {
 
     bot.on('text', async (ctx) => {
       try {
+        const from = ctx.from;
+        const contactId = String(from.id);
+        const contactName = from.first_name + (from.last_name ? ` ${from.last_name}` : '');
+        const text = 'text' in ctx.message ? ctx.message.text : '';
+
+        // Ensure contact exists, create if not
+        let contact = this.contactService.getContactByIdentifier(channelId, contactId);
+        if (!contact) {
+          contact = this.contactService.createContact(channelId, contactId, contactName);
+          logger.info(`New contact created for ${contactId} (${contactName}) on channel ${channelId}`);
+        }
+
+        if (!text) return; // Ignore non-text messages for now
+
         const chatId = String(ctx.chat.id);
-        const text = ctx.message.text || '';
 
         logger.info(`Telegram message on channel ${channelId} from ${chatId}: ${text}`);
 

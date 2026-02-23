@@ -9,6 +9,7 @@ import { errorHandler } from '../middleware/auth';
 import authRoutes from '../routes/auth';
 import channelRoutes from '../routes/channels';
 import messageRoutes from '../routes/messages';
+import contactRoutes from '../routes/contacts';
 import { WhatsAppManager } from '../services/WhatsAppManager';
 import TelegramManager from '../services/TelegramManager';
 
@@ -55,6 +56,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/channels', channelRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/contacts', contactRoutes);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

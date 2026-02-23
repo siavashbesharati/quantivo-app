@@ -259,6 +259,11 @@ export class ContactService {
     return stmt.all(channelId) as Contact[];
   }
 
+  getContactByIdentifier(channelId: string, identifier: string): Contact | null {
+    const stmt = this.db.prepare('SELECT * FROM contacts WHERE channel_id = ? AND identifier = ?');
+    return stmt.get(channelId, identifier) as Contact | null;
+  }
+
   updateContact(id: string, updates: Partial<Contact>): Contact {
     const allowedFields = ['name', 'phone_number', 'email', 'metadata'];
     const fields = Object.keys(updates).filter((k) => allowedFields.includes(k));

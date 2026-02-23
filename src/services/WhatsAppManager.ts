@@ -142,6 +142,13 @@ export class WhatsAppManager {
       
       logger.info(`Received message from ${contactId} on channel ${channelId}: "${messageContent}"`);
 
+      // Ensure contact exists, create if not
+      let contact = this.contactService.getContactByIdentifier(channelId, contactId);
+      if (!contact) {
+        contact = this.contactService.createContact(channelId, contactId, msg.pushName || contactId);
+        logger.info(`New contact created for ${contactId} on channel ${channelId}`);
+      }
+
       // Save message to database and capture created record
       const created = this.messageService.createMessage(
         channelId,

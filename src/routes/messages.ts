@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { AuthRequest, authMiddleware } from '../middleware/auth';
 import { MessageService, ChannelService } from '../database/services';
+import { Parser } from 'json2csv';
 
 const router = Router();
 const messageService = new MessageService();
@@ -189,6 +190,33 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
   } catch (error) {
     console.error('Delete message error:', error);
     res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+// GET /api/messages/channel/:channel_id/export
+router.get('/channel/:channel_id/export', authenticateToken, async (req: any, res) => {
+  const { channel_id } = req.params;
+  const { format = 'csv' } = req.query;
+
+  try {
+    const messageService = new MessageService();
+    // Fetch all messages for the channel (adjust limit as needed, or implement pagination)
+    const messages = messageService.getMessagesByChannel(channel_id, 10000); 
+
+    if (format === 'csv') {
+      const fields = ['id', 'channel_id', 'contact_identifier', 'content', 'direction', 'message_type', 'ai_response', 'response_sent', 'timestamp'];
+      const parser = new Parser({ fields });
+      const csv = parser.parse(messages);
+
+      res.header('Content-Type', 'text/csv');
+      res.attachment(`messages-${channel_id}-${Date.now()}.csv`);
+      return res.send(csv);
+    }
+
+    // Default to JSON if format is not 'csv'
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: 'Error exporting messages', error: (err as Error).message });
   }
 });
 
