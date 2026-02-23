@@ -1,12 +1,12 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';
 import { ContactService } from '../database/services';
 import { Parser } from 'json2csv';
 
 const router = express.Router();
 
 // GET /api/contacts/channel/:channel_id
-router.get('/channel/:channel_id', authenticateToken, (req: any, res) => {
+router.get('/channel/:channel_id', authMiddleware, (req: any, res) => {
     const { channel_id } = req.params;
     try {
         const contactService = new ContactService();
@@ -18,7 +18,7 @@ router.get('/channel/:channel_id', authenticateToken, (req: any, res) => {
 });
 
 // GET /api/contacts/channel/:channel_id/export
-router.get('/channel/:channel_id/export', authenticateToken, async (req: any, res) => {
+router.get('/channel/:channel_id/export', authMiddleware, async (req: any, res) => {
     const { channel_id } = req.params;
     const { format = 'csv' } = req.query;
 

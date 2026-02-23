@@ -2,6 +2,7 @@ import makeWASocket, {
   AuthenticationState,
   DisconnectReason,
   fetchLatestBaileysVersion,
+  GroupParticipant,
   isJidBroadcast,
   makeCacheableSignalKeyStore,
   proto,
@@ -208,6 +209,25 @@ export class WhatsAppManager {
       } catch (err) {
         logger.error(`Failed to fetch groups for channel ${channelId}:`, err);
         throw new Error('Could not fetch groups');
+      }
+    } else {
+      throw new Error('WhatsApp connection is not fully authenticated.');
+    }
+  }
+
+  // Method to get members of a specific group
+  async getGroupMembers(channelId: string, groupId: string): Promise<GroupParticipant[]> {
+    const sock = WhatsAppManager.instances.get(channelId);
+    if (!sock) {
+      throw new Error(`WhatsApp connection not found for channel ${channelId}`);
+    }
+    if (sock.user?.id) {
+      try {
+        const groupMetadata = await sock.groupMetadata(groupId);
+        return groupMetadata.participants; // Return array of participant objects
+      } catch (err) {
+        logger.error(`Failed to fetch group members for group ${groupId} in channel ${channelId}:`, err);
+        throw new Error('Could not fetch group members');
       }
     } else {
       throw new Error('WhatsApp connection is not fully authenticated.');

@@ -194,7 +194,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
 });
 
 // GET /api/messages/channel/:channel_id/export
-router.get('/channel/:channel_id/export', authenticateToken, async (req: any, res) => {
+router.get('/channel/:channel_id/export', authMiddleware, async (req: any, res) => {
   const { channel_id } = req.params;
   const { format = 'csv' } = req.query;
 

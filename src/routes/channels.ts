@@ -3,6 +3,8 @@ import { AuthRequest, authMiddleware } from '../middleware/auth';
 import { ChannelService } from '../database/services';
 import { WhatsAppManager } from '../services/WhatsAppManager';
 import { encryptToken } from '../utils/crypto';
+import { Parser } from 'json2csv';
+import { GroupParticipant } from '@whiskeysockets/baileys';
 
 const router = Router();
 const channelService = new ChannelService();
@@ -278,6 +280,55 @@ router.get('/:id/whatsapp/groups', async (req: AuthRequest, res: Response): Prom
   } catch (error) {
     console.error('Get WhatsApp groups error:', error);
     res.status(500).json({ error: 'Failed to retrieve WhatsApp groups' });
+  }
+});
+
+// Export WhatsApp group members as CSV
+router.get('/:id/whatsapp/groups/:groupId/members/export', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id, groupId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const channel = channelService.getChannelById(id);
+    if (!channel || channel.user_id !== userId) {
+      res.status(403).json({ error: 'Access denied to this channel' });
+      return;
+    }
+    if (channel.type !== 'whatsapp') {
+      res.status(400).json({ error: 'This endpoint is only for WhatsApp channels' });
+      return;
+    }
+
+    const waManager = req.app.get('waManager');
+    if (!waManager) {
+      res.status(500).json({ error: 'WhatsApp manager not available on server' });
+      return;
+    }
+
+    const members = await waManager.getGroupMembers(id, groupId);
+
+    // Convert to CSV format
+    const csvData = members.map((member: GroupParticipant) => ({
+      id: member.id,
+      admin: member.admin || 'member',
+      isSuperAdmin: member.isSuperAdmin || false,
+    }));
+
+    const parser = new Parser({ fields: ['id', 'admin', 'isSuperAdmin'] });
+    const csv = parser.parse(csvData);
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`group-members-${groupId}-${Date.now()}.csv`);
+    res.send(csv);
+
+  } catch (error) {
+    console.error('Export WhatsApp group members error:', error);
+    res.status(500).json({ error: 'Failed to export group members' });
   }
 });
 

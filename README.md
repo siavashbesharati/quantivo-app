@@ -76,6 +76,8 @@ The server will start on `http://localhost:5000`
 - `GET /api/channels/:id` - Get specific channel
 - `PUT /api/channels/:id` - Update channel
 - `DELETE /api/channels/:id` - Delete channel
+- `GET /api/channels/:id/whatsapp/groups` - Get WhatsApp groups for a channel
+- `GET /api/channels/:id/whatsapp/groups/:groupId/members/export` - Export WhatsApp group members as CSV
 
 ### Messages
 - `POST /api/messages` - Create message
@@ -83,6 +85,11 @@ The server will start on `http://localhost:5000`
 - `GET /api/messages/:id` - Get specific message
 - `PUT /api/messages/:id` - Update message
 - `DELETE /api/messages/:id` - Delete message
+- `GET /api/messages/channel/:channel_id/export` - Export messages as CSV
+
+### Contacts
+- `GET /api/contacts/channel/:channel_id` - Get channel contacts
+- `GET /api/contacts/channel/:channel_id/export` - Export contacts as CSV
 
 ## Database Schema
 
@@ -143,8 +150,10 @@ Note: The current Gemini integration uses a generic REST call and falls back to 
 Note: the DB schema and `messages` table include `ai_response` and `auto_reply_enabled`, but no AI service or auto-reply flow is implemented yet.
 
 ### Phase 4: Data Tools
-- [ ] Contact scraping
-- [ ] Excel/CSV export
+- [x] Contact scraping
+- [x] Excel/CSV export
+- [x] WhatsApp group fetching
+- [x] WhatsApp group member export
 
 ### Phase 5: Testing & CI
 - [x] Unit tests for crypto utilities
