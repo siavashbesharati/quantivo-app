@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { AuthRequest, authMiddleware } from '../middleware/auth';
 import { ChannelService } from '../database/services';
+import { WhatsAppManager } from '../services/WhatsAppManager';
 
 const router = Router();
 const channelService = new ChannelService();
@@ -33,6 +34,41 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   } catch (error) {
     console.error('Create channel error:', error);
     res.status(500).json({ error: 'Failed to create channel' });
+  }
+});
+
+// Connect WhatsApp channel and get QR code
+router.post('/:id/whatsapp/connect', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const channel = channelService.getChannelById(id);
+    if (!channel || channel.user_id !== userId) {
+      res.status(403).json({ error: 'Access denied to this channel' });
+      return;
+    }
+    if (channel.type !== 'whatsapp') {
+      res.status(400).json({ error: 'This endpoint is only for WhatsApp channels' });
+      return;
+    }
+
+    // This assumes waManager is accessible. We'll need to pass it to the routes.
+    // For now, let's just call the static method for simplicity in generation.
+    // A better approach would be dependency injection.
+    const waSocket = await req.app.get('waManager').connectToWhatsApp(id);
+
+    res.status(200).json({
+      message: 'WhatsApp connection process started. Listen for QR code on Socket.IO.',
+    });
+  } catch (error) {
+    console.error('WhatsApp connect error:', error);
+    res.status(500).json({ error: 'Failed to start WhatsApp connection' });
   }
 });
 

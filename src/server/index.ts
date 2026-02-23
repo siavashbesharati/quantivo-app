@@ -9,9 +9,11 @@ import { errorHandler } from '../middleware/auth';
 import authRoutes from '../routes/auth';
 import channelRoutes from '../routes/channels';
 import messageRoutes from '../routes/messages';
+import { WhatsAppManager } from '../services/WhatsAppManager';
 
 // Load environment variables
 dotenv.config();
+
 
 const app = express();
 const httpServer = createServer(app);
@@ -27,6 +29,11 @@ const PORT = process.env.PORT || 5000;
 // Initialize database
 console.log('Initializing database...');
 initializeDatabase();
+
+// Initialize WhatsApp Manager
+const waManager = new WhatsAppManager(io);
+app.set('waManager', waManager); // Make it accessible in routes
+waManager.initializeFromDB();
 
 // Middleware
 app.use(cors());
