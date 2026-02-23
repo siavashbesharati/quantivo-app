@@ -245,4 +245,40 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
   }
 });
 
+// Get WhatsApp groups for a channel
+router.get('/:id/whatsapp/groups', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const channel = channelService.getChannelById(id);
+    if (!channel || channel.user_id !== userId) {
+      res.status(403).json({ error: 'Access denied to this channel' });
+      return;
+    }
+    if (channel.type !== 'whatsapp') {
+      res.status(400).json({ error: 'This endpoint is only for WhatsApp channels' });
+      return;
+    }
+
+    const waManager = req.app.get('waManager');
+    if (!waManager) {
+      res.status(500).json({ error: 'WhatsApp manager not available on server' });
+      return;
+    }
+    
+    const groups = await waManager.getGroups(id);
+    res.status(200).json({ groups });
+
+  } catch (error) {
+    console.error('Get WhatsApp groups error:', error);
+    res.status(500).json({ error: 'Failed to retrieve WhatsApp groups' });
+  }
+});
+
 export default router;

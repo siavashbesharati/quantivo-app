@@ -194,4 +194,23 @@ export class WhatsAppManager {
 
     return sock;
   }
+
+  // Method to get all groups for a given channel
+  async getGroups(channelId: string): Promise<any> {
+    const sock = WhatsAppManager.instances.get(channelId);
+    if (!sock) {
+      throw new Error(`WhatsApp connection not found for channel ${channelId}`);
+    }
+    if (sock.user?.id) {
+      try {
+        const groups = await sock.groupFetchAllParticipating();
+        return Object.values(groups); // Return an array of group metadata
+      } catch (err) {
+        logger.error(`Failed to fetch groups for channel ${channelId}:`, err);
+        throw new Error('Could not fetch groups');
+      }
+    } else {
+      throw new Error('WhatsApp connection is not fully authenticated.');
+    }
+  }
 }
