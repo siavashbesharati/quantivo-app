@@ -4,11 +4,11 @@ import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import { initializeDatabase } from './database/init';
-import { errorHandler } from './middleware/auth';
-import authRoutes from './routes/auth';
-import channelRoutes from './routes/channels';
-import messageRoutes from './routes/messages';
+import { initializeDatabase } from '../database/init';
+import { errorHandler } from '../middleware/auth';
+import authRoutes from '../routes/auth';
+import channelRoutes from '../routes/channels';
+import messageRoutes from '../routes/messages';
 
 // Load environment variables
 dotenv.config();
