@@ -135,6 +135,12 @@ export class ChannelService {
     return stmt.all(userId) as Channel[];
   }
 
+  getChannelSystemPrompt(channelId: string): string | null {
+    const stmt = this.db.prepare('SELECT system_prompt FROM channels WHERE id = ?');
+    const result = stmt.get(channelId) as { system_prompt: string | null } | undefined;
+    return result ? result.system_prompt : null;
+  }
+
   updateChannel(id: string, updates: Partial<Channel>): Channel {
     const allowedFields = ['name', 'session_data', 'is_active', 'auto_reply_enabled', 'system_prompt'];
     const fields = Object.keys(updates).filter((k) => allowedFields.includes(k));

@@ -3,6 +3,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { ChannelService, MessageService, ContactService, Channel } from '../database/services';
 import pino from 'pino';
 import { decryptToken, isEncryptedToken } from '../utils/crypto';
+import GeminiService from './GeminiService';
 
 const logger = pino({ level: 'info' });
 
@@ -12,12 +13,14 @@ export class TelegramManager {
   private channelService: ChannelService;
   private messageService: MessageService;
   private contactService: ContactService;
+  private gemini: GeminiService;
 
   constructor(io: SocketIOServer) {
     this.io = io;
     this.channelService = new ChannelService();
     this.messageService = new MessageService();
     this.contactService = new ContactService();
+    this.gemini = new GeminiService();
     logger.info('TelegramManager initialized');
   }
 
@@ -72,10 +75,28 @@ export class TelegramManager {
 
         logger.info(`Telegram message on channel ${channelId} from ${chatId}: ${text}`);
 
-        // Save message
-        this.messageService.createMessage(channelId, chatId, text, 'in');
+        // Save message and capture record
+        const created = this.messageService.createMessage(channelId, chatId, text, 'in');
 
-        // Emit to frontend
+        // Generate AI response (non-blocking)
+        (async () => {
+          try {
+            const aiReply = await this.gemini.generateReply(channelId, chatId, text);
+            if (aiReply) {
+              this.messageService.updateMessage(created.id, { ai_response: aiReply });
+              const channelRec = this.channelService.getChannelById(channelId);
+              if (channelRec?.auto_reply_enabled) {
+                await bot.telegram.sendMessage(chatId, aiReply);
+                this.messageService.updateMessage(created.id, { response_sent: true });
+              }
+              this.io.emit(`message:${channelId}`, { contact: chatId, content: aiReply, direction: 'out', ai: true });
+            }
+          } catch (err) {
+            logger.error('Error generating/sending AI reply (Telegram):', err);
+          }
+        })();
+
+        // Emit incoming message to frontend
         this.io.emit(`message:${channelId}`, {
           contact: chatId,
           content: text,

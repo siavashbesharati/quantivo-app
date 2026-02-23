@@ -136,20 +136,26 @@ The server will start on `http://localhost:5000`
 - [x] Session persistence (file-based via Baileys `useMultiFileAuthState`; DB-backed session sync not implemented)
 
 ### Phase 3: AI & Auto-Reply Logic
-- [ ] Gemini integration
-- [ ] Message broker
-- [ ] Auto-response system
+- [x] Gemini integration (basic service added; requires `GEMINI_API_KEY` and may need endpoint adjustments)
+- [x] Message broker (simple flow: incoming messages trigger `GeminiService.generateReply` — stored to `messages.ai_response`)
+- [x] Auto-response system (configurable per-channel via `auto_reply_enabled`; replies are sent when enabled)
+Note: The current Gemini integration uses a generic REST call and falls back to a placeholder when `GEMINI_API_KEY` is not provided. Verify and replace with the official client if desired.
 Note: the DB schema and `messages` table include `ai_response` and `auto_reply_enabled`, but no AI service or auto-reply flow is implemented yet.
 
 ### Phase 4: Data Tools
 - [ ] Contact scraping
 - [ ] Excel/CSV export
 
+### Phase 5: Testing & CI
+- [x] Unit tests for crypto utilities
+- [x] Integration tests for Gemini AI Service
+- [ ] CI workflow (GitHub Actions)
+
 Notes & current issues:
 
 - `JWT_EXPIRY` handling: `.env` uses `7d`, but `src/utils/auth.ts` previously cast the value with `Number(...)` which results in `NaN` for non-numeric durations. This has been fixed to accept both numeric seconds and duration strings (e.g. `7d`).
 - Telegram integration and Gemini AI service are not implemented — dependencies exist in `package.json` but there are no corresponding service files in `src/services/`.
-- Tests & CI: `jest` is present in devDependencies but there are no test files or CI workflow yet.
+- Tests & CI: `jest` is present in devDependencies. Unit tests for crypto and integration tests for the Gemini service have been added. A CI workflow has not been set up yet.
 
 ## Project Structure
 
@@ -205,3 +211,12 @@ MIT
 ## Support
 
 For issues and questions, please create an issue in the repository.
+
+## Testing
+
+Run unit and integration tests:
+```bash
+npm test
+```
+
+The integration tests for the Gemini service will only run if you have a `GEMINI_API_KEY` set in your `.env` file.

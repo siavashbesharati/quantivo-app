@@ -11,6 +11,7 @@ import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import { Server as SocketIOServer } from 'socket.io';
 import { ChannelService, MessageService, ContactService, Channel } from '../database/services';
+import GeminiService from './GeminiService';
 import { toDataURL } from 'qrcode';
 import { getDatabase } from '../database/init';
 
@@ -34,6 +35,7 @@ export class WhatsAppManager {
   private io: SocketIOServer;
   private channelService: ChannelService;
   private messageService: MessageService;
+  private gemini: GeminiService;
   private contactService: ContactService;
 
   constructor(io: SocketIOServer) {
@@ -41,6 +43,7 @@ export class WhatsAppManager {
     this.channelService = new ChannelService();
     this.messageService = new MessageService();
     this.contactService = new ContactService();
+    this.gemini = new GeminiService();
     logger.info('WhatsAppManager initialized');
   }
 
@@ -139,15 +142,42 @@ export class WhatsAppManager {
       
       logger.info(`Received message from ${contactId} on channel ${channelId}: "${messageContent}"`);
 
-      // Save message to database
-      this.messageService.createMessage(
+      // Save message to database and capture created record
+      const created = this.messageService.createMessage(
         channelId,
         contactId,
         messageContent,
         'in'
       );
 
-      // Notify frontend
+      // Generate AI response (non-blocking)
+      (async () => {
+        try {
+          const aiReply = await this.gemini.generateReply(channelId, contactId, messageContent);
+          if (aiReply) {
+            this.messageService.updateMessage(created.id, { ai_response: aiReply });
+
+            // Auto-reply if channel has auto_reply_enabled
+            const channel = this.channelService.getChannelById(channelId);
+            if (channel?.auto_reply_enabled) {
+              // Send reply via WhatsApp
+              await sock.sendMessage(contactId, { text: aiReply });
+              this.messageService.updateMessage(created.id, { response_sent: true });
+            }
+            // Emit AI response for frontend
+            this.io.emit(`message:${channelId}`, {
+              contact: contactId,
+              content: aiReply,
+              direction: 'out',
+              ai: true,
+            });
+          }
+        } catch (err) {
+          logger.error('Error generating/sending AI reply:', err);
+        }
+      })();
+
+      // Notify frontend about incoming message
       this.io.emit(`message:${channelId}`, {
         contact: contactId,
         content: messageContent,
