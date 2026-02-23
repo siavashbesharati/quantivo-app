@@ -2,10 +2,11 @@ import jwt, { Secret } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production';
-// Default to 7 days in seconds. The 'jsonwebtoken' library can take a string like "7d",
-// but its TypeScript types are very strict. Using a number for seconds is more reliable.
-// If you set JWT_EXPIRY in .env, make sure it is a number of seconds.
-const JWT_EXPIRY = process.env.JWT_EXPIRY || 604800; // Default: 7 days in seconds
+// JWT expiry can be a number (seconds) or a string duration (e.g. '7d').
+// Preserve the original env value if it's a non-numeric duration so `jsonwebtoken`
+// can accept strings like '7d'. If it's numeric, convert to Number.
+const rawExpiry = process.env.JWT_EXPIRY ?? '604800'; // default 7 days in seconds
+const JWT_EXPIRY: string | number = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
 
 export interface JWTPayload {
   userId: string;
@@ -25,7 +26,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 // JWT token management
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: Number(JWT_EXPIRY) });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
 export function verifyToken(token: string): JWTPayload | null {

@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { AuthRequest, authMiddleware } from '../middleware/auth';
 import { ChannelService } from '../database/services';
 import { WhatsAppManager } from '../services/WhatsAppManager';
+import { encryptToken } from '../utils/crypto';
 
 const router = Router();
 const channelService = new ChannelService();
@@ -69,6 +70,53 @@ router.post('/:id/whatsapp/connect', async (req: AuthRequest, res: Response): Pr
   } catch (error) {
     console.error('WhatsApp connect error:', error);
     res.status(500).json({ error: 'Failed to start WhatsApp connection' });
+  }
+});
+
+// Connect Telegram channel by providing a bot token (saved in channel.session_data)
+router.post('/:id/telegram/connect', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { token } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const channel = channelService.getChannelById(id);
+    if (!channel || channel.user_id !== userId) {
+      res.status(403).json({ error: 'Access denied to this channel' });
+      return;
+    }
+    if (channel.type !== 'telegram') {
+      res.status(400).json({ error: 'This endpoint is only for Telegram channels' });
+      return;
+    }
+
+    if (!token) {
+      res.status(400).json({ error: 'Telegram bot token is required in request body as `token`' });
+      return;
+    }
+
+    // Encrypt and save token to channel.session_data
+    const encrypted = encryptToken(token);
+    channelService.updateChannel(id, { session_data: encrypted });
+
+    // Start the Telegram bot for this channel
+    const tgManager = req.app.get('tgManager');
+    if (!tgManager) {
+      res.status(500).json({ error: 'Telegram manager not available on server' });
+      return;
+    }
+
+    await tgManager.connectToTelegram(id);
+
+    res.status(200).json({ message: 'Telegram bot link started and token saved to channel.session_data' });
+  } catch (error) {
+    console.error('Telegram connect error:', error);
+    res.status(500).json({ error: 'Failed to link Telegram bot to channel' });
   }
 });
 

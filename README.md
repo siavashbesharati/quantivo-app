@@ -130,19 +130,26 @@ The server will start on `http://localhost:5000`
 - [x] SQLite service layer
 - [x] Socket.IO setup
 
-### Phase 2: Channel Connection (Next)
-- [ ] WhatsApp QR code generation
-- [ ] Telegram Business account linking
-- [ ] Session persistence
+### Phase 2: Channel Connection
+- [x] WhatsApp QR code generation (implemented in `WhatsAppManager` — QR via Socket.IO)
+- [x] Telegram integration (basic Telegraf bot support implemented in `TelegramManager`)
+- [x] Session persistence (file-based via Baileys `useMultiFileAuthState`; DB-backed session sync not implemented)
 
 ### Phase 3: AI & Auto-Reply Logic
 - [ ] Gemini integration
 - [ ] Message broker
 - [ ] Auto-response system
+Note: the DB schema and `messages` table include `ai_response` and `auto_reply_enabled`, but no AI service or auto-reply flow is implemented yet.
 
 ### Phase 4: Data Tools
 - [ ] Contact scraping
 - [ ] Excel/CSV export
+
+Notes & current issues:
+
+- `JWT_EXPIRY` handling: `.env` uses `7d`, but `src/utils/auth.ts` previously cast the value with `Number(...)` which results in `NaN` for non-numeric durations. This has been fixed to accept both numeric seconds and duration strings (e.g. `7d`).
+- Telegram integration and Gemini AI service are not implemented — dependencies exist in `package.json` but there are no corresponding service files in `src/services/`.
+- Tests & CI: `jest` is present in devDependencies but there are no test files or CI workflow yet.
 
 ## Project Structure
 
@@ -172,12 +179,13 @@ Bbidar-v2/
 
 ## Next Steps
 
-1. Install dependencies: `npm install`
-2. Setup `.env` file with API keys
+1. Install dependencies: `npm install` (completed)
+2. Setup `.env` file with API keys (in progress)
 3. Run `npm run db:init` to create database
 4. Start development server: `npm run dev`
 5. Implement Baileys WhatsApp integration
-6. Implement Telegraf Telegram integration
+6. Implement Telegraf Telegram integration (basic manager implemented)
+7. Add per-channel Telegram linking route: POST `/api/channels/:id/telegram/connect` — accepts `{ token }` and saves it to `session_data` (implemented)
 7. Build Gemini AI service
 8. Create React/Next.js frontend
 

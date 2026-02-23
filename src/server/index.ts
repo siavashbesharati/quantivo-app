@@ -10,6 +10,7 @@ import authRoutes from '../routes/auth';
 import channelRoutes from '../routes/channels';
 import messageRoutes from '../routes/messages';
 import { WhatsAppManager } from '../services/WhatsAppManager';
+import TelegramManager from '../services/TelegramManager';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,11 @@ initializeDatabase();
 const waManager = new WhatsAppManager(io);
 app.set('waManager', waManager); // Make it accessible in routes
 waManager.initializeFromDB();
+
+// Initialize Telegram Manager
+const tgManager = new TelegramManager(io);
+app.set('tgManager', tgManager);
+tgManager.initializeFromDB();
 
 // Middleware
 app.use(cors());
